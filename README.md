@@ -34,17 +34,43 @@ snakemake
 
 ## Create, index and map Illumina reads to Graph A
 
+There are 3 different subdirectories for Graph A in `yeast_sv/graphs`:
+- `yeast_sv/graphs/constructunion_all` - Integrate variants from all strains into graph
+- `yeast_sv/graphs/constructunion_twoout` - Integrate variants from only 9 of the strains into the graph (excluding Y12 and N44)
+- `yeast_sv/graphs/constructunion_conly` - Integrate variants from only S. cerevisiae strains into the graph
+
+For the first graph, run:
 ```
 cd yeast_sv/graphs/constructunion_all
 snakemake
 ```
 
-This will create Graph A using S288C as reference strain and the high-sensitivity variant callset produced before. There are 3 different subdirectories for Graph A in `yeast_sv/graphs`:
-- `yeast_sv/graphs/constructunion_all` - Integrate variants from all strains into graph
-- `yeast_sv/graphs/constructunion_twoout` - Integrate variants from only 9 of the strains into the graph (excluding Y12 and N44)
-- `yeast_sv/graphs/constructunion_all` - Integrate variants from only S. cerevisiae strains into the graph
+This will create Graph A using S288C as reference strain and the high-sensitivity variant callset produced before. 
 
 As a result `yeast_sv/graphs/constructunion_*/mappings` will contain the sorted GAM alignments of the Illumina reads against the graph.
 
 
+## Run cactus
+
+First, install toil in a virtual environment:
+```
+pip install virtualenv
+virtualenv cactus_env
+source cactus_env/bin/activate
+pip install --upgrade toil
+```
+
+Like for Graph A, there are 3 different flavors of Graph B: `all`, `twoout` and `conly`. To create either of them, now follow the steps in `yeast_sv/cactus/all/aws_commands.sh`, `yeast_sv/cactus/twoout/aws_commands.sh` or `yeast_sv/cactus/conly/aws_commands.sh`.
+
+
+## Create, index and map Illumina reads to Graph B
+
+```
+cd yeast_sv/graphs/cactus_all
+snakemake
+```
+
+This will create Graph B from the cactus alignments produced in the previous step. Do likewise for the `twoout` and `conly` graphs.
+
+As a result `yeast_sv/graphs/cactus_*/mappings` will contain the sorted GAM alignments of the Illumina reads against the graph.
 
