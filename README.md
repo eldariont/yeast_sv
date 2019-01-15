@@ -74,3 +74,17 @@ This will create Graph B from the cactus alignments produced in the previous ste
 
 As a result `yeast_sv/graphs/cactus_*/mappings` will contain the sorted GAM alignments of the Illumina reads against the graph.
 
+
+## Genotype SVs on Graph A and Graph B
+
+First, install toil in a virtual environment:
+```
+virtualenv toilvenv
+source toilvenv/bin/activate
+pip install toil[aws,mesos]==3.18.0
+pip install toil-vg
+```
+
+For Graph A, follow the steps in `yeast_sv/vg_call/graphA_aws_commands.sh`. It contains commands for the `all` graph but can be easily modified for the `twoout` and `conly` graphs.
+For Graph B, follow the steps in `yeast_sv/vg_call/graphB_aws_commands.sh`.
+

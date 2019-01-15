@@ -1,11 +1,17 @@
-source ~/Documents/Projects/ucsc/cactus/cactus_env/bin/activate
+#Activate virtual environment if not already done
+source cactus_env/bin/activate
 ssh-add
-toil launch-cluster -z us-west-2a cactus --keyPairName daheller@main --leaderNodeType t2.medium
-cd ~/Documents/Projects/ucsc/yeast_assemblies
-toil rsync-cluster -z us-west-2a cactus -avP AWSrun_181130/seqfile_yeast.txt assemblies_repeatmasked/DBVPG6044.genome.fa.masked assemblies_repeatmasked/DBVPG6765.genome.fa.masked assemblies_repeatmasked/N44.genome.fa.masked assemblies_repeatmasked/S288C.genome.fa.masked assemblies_repeatmasked/SK1.genome.fa.masked assemblies_repeatmasked/UWOPS034614.genome.fa.masked assemblies_repeatmasked/Y12.genome.fa.masked assemblies_repeatmasked/YPS128.genome.fa.masked :/
+
+#Launch cluster for cactus
+toil launch-cluster -z us-west-2a cactus --keyPairName <KEYPAIRNAME> --leaderNodeType t2.medium
+
+#Copy repeat-masked assemblies and seqfile onto leader node
+toil rsync-cluster -z us-west-2a cactus -avP yeast_sv/cactus/conly/seqfile_yeast.txt yeast_sv/assemblies/assemblies_repeatmasked/DBVPG6044.genome.fa.masked yeast_sv/assemblies/assemblies_repeatmasked/DBVPG6765.genome.fa.masked yeast_sv/assemblies/assemblies_repeatmasked/N44.genome.fa.masked yeast_sv/assemblies/assemblies_repeatmasked/S288C.genome.fa.masked yeast_sv/assemblies/assemblies_repeatmasked/SK1.genome.fa.masked yeast_sv/assemblies/assemblies_repeatmasked/UWOPS034614.genome.fa.masked yeast_sv/assemblies/assemblies_repeatmasked/Y12.genome.fa.masked yeast_sv/assemblies/assemblies_repeatmasked/YPS128.genome.fa.masked :/
+
+#Connect to leader node
 toil ssh-cluster -z us-west-2a cactus
 
-#On AWS node
+#On leader node:
 apt update
 apt install -y git tmux
 virtualenv --system-site-packages venv
@@ -15,7 +21,10 @@ cd cactus
 pip install --upgrade .
 cd /
 screen
-cactus --nodeTypes c5.4xlarge:0.4,r4.2xlarge --minNodes 0,0 --maxNodes 1,1 --provisioner aws --batchSystem mesos --metrics aws:us-west-2:cactusrun2 seqfile_yeast.txt cactusoutput2.hal
+cactus --nodeTypes c5.4xlarge:0.4,r4.2xlarge --minNodes 0,0 --maxNodes 1,1 --provisioner aws --batchSystem mesos --metrics aws:us-west-2:cactus seqfile_yeast.txt cactusoutput.hal
+#Disconnect from leader node
 
-toil rsync-cluster -z us-west-2a cactus -avP :/cactusoutput2.hal .
+#Copy cactus alignment result from leader node to the vg mapping pipeline directory
+toil rsync-cluster -z us-west-2a cactus -avP :/cactusoutput.hal yeast_sv/graphs/cactus_conly/
+#Destroy cluster
 toil destroy-cluster -z us-west-2a cactus
