@@ -37,7 +37,7 @@ rule repeat_mask:
         "assemblies_repeatmasked/{sample}.genome.fa.masked"
     threads: 4
     shell:
-        "/public/home/daheller/bin/RepeatMasker/RepeatMasker -species Saccharomyces -pa {threads} -xsmall -dir assemblies_repeatmasked {input}"
+        "RepeatMasker -species Saccharomyces -pa {threads} -xsmall -dir assemblies_repeatmasked {input}"
 
 
 rule repeat_mask_hard:
@@ -47,7 +47,7 @@ rule repeat_mask_hard:
         "assemblies_repeatmasked_hard/{sample}.genome.fa.masked"
     threads: 4
     shell:
-        "/public/home/daheller/bin/RepeatMasker/RepeatMasker -species Saccharomyces -pa {threads} -dir assemblies_repeatmasked_hard {input}"
+        "RepeatMasker -species Saccharomyces -pa {threads} -dir assemblies_repeatmasked_hard {input}"
 
 
 ###########
@@ -61,7 +61,7 @@ rule build_lastdb:
     output:
         "lastdb/S288C.prj"
     shell:
-        "/public/home/daheller/bin/last-959/src/lastdb -R01 lastdb/S288C {input}"
+        "lastdb -R01 lastdb/S288C {input}"
 
 
 rule run_last:
@@ -71,7 +71,7 @@ rule run_last:
     output:
         "lastal_output/{sample}.maf.gz"
     shell:
-        "/public/home/daheller/bin/last-959/src/lastal -e25 -v -q3 -j4 lastdb/S288C {input.assembly} | /public/home/daheller/bin/last-959/src/last-split -s35 -v | gzip > {output}"
+        "lastal -e25 -v -q3 -j4 lastdb/S288C {input.assembly} | /public/home/daheller/bin/last-959/src/last-split -s35 -v | gzip > {output}"
 
 
 #minimap2
@@ -82,7 +82,7 @@ rule run_minimap2:
     output:
         "minimap2_output/{sample}.S288C.{asm}.paf"
     shell:
-        "~/bin/minimap2-2.14_x64-linux/minimap2 -cx {wildcards.asm} --cs {input.target} {input.query} > {output}"
+        "minimap2 -cx {wildcards.asm} --cs {input.target} {input.query} > {output}"
 
 
 #Nucmer
@@ -93,7 +93,7 @@ rule run_nucmer:
     output:
         "nucmer_output/{sample}.delta"
     shell:
-        "~/bin/MUMmer3.23/nucmer --maxmatch --minmatch 15 --maxgap 500 --mincluster 200 --diagdiff 20 {input.reference} {input.assembly} -prefix nucmer_output/{wildcards.sample}"
+        "nucmer --maxmatch --minmatch 15 --maxgap 500 --mincluster 200 --diagdiff 20 {input.reference} {input.assembly} -prefix nucmer_output/{wildcards.sample}"
 
 
 #########
@@ -108,7 +108,7 @@ rule run_paftools_call:
     output:
         "paftools_output/{sample}.{asm}.vcf"
     shell:
-        "sort -k6,6 -k8,8n {input.paf} | ~/bin/minimap2-2.14_x64-linux/paftools.js call -L 10000 -f {input.ref} - > {output}"
+        "sort -k6,6 -k8,8n {input.paf} | paftools.js call -L 10000 -f {input.ref} - > {output}"
 
 
 def get_input(wildcards):
@@ -156,7 +156,7 @@ rule run_asmvar:
     params:
         prefix="asmvar_output/{sample}.{chrom}"
     shell:
-        "/public/home/daheller/bin/AsmVar/src/AsmvarDetect/ASV_VariantDetector -s {wildcards.sample} -r {wildcards.chrom} -i {input.maf} -t {input.target} -q {input.query} -o {params.prefix} > {output.age} 2> {output.log}"
+        "ASV_VariantDetector -s {wildcards.sample} -r {wildcards.chrom} -i {input.maf} -t {input.target} -q {input.query} -o {params.prefix} > {output.age} 2> {output.log}"
 
 
 rule cat_asmvar:
@@ -196,7 +196,7 @@ rule run_assemblytics:
     output:
         "assemblytics_output/{sample}.Assemblytics_structural_variants.bed"
     shell:
-        "~/bin/Assemblytics/Assemblytics {input} assemblytics_output/{wildcards.sample} 5000 ~/bin/Assemblytics/"
+        "Assemblytics {input} assemblytics_output/{wildcards.sample} 5000 ~/bin/Assemblytics/"
 
 
 rule convert_assemblytics_bed_to_bed:
@@ -243,7 +243,7 @@ rule union:
     output:
         "SV/unions/union.{sample}.{type}.bed"
     shell:
-        "cat {input.paftools} <(~/bin/bedtools2/bin/bedtools intersect -a {input.asmvar} -b {input.paftools} -v -r -f 0.5) <(~/bin/bedtools2/bin/bedtools intersect -a {input.assemblytics} -b {input.asmvar} {input.paftools} -v -r -f 0.5) > {output}"
+        "cat {input.paftools} <(bedtools intersect -a {input.asmvar} -b {input.paftools} -v -r -f 0.5) <(bedtools intersect -a {input.assemblytics} -b {input.asmvar} {input.paftools} -v -r -f 0.5) > {output}"
 
 #Create truth set (all calls that were called by at least two of the tools)
 rule two_out_of_three:
@@ -257,10 +257,10 @@ rule two_out_of_three:
         asm_bly="SV/intersections/temp/asm_bly.{sample}.{type}.bed",
         final="SV/intersections/two_out_of_three.{sample}.{type}.bed"
     run:
-        shell("~/bin/bedtools2/bin/bedtools intersect -a {input.paftools} -b {input.asmvar} -u -r -f 0.5 > {output.paf_asm}")
-        shell("~/bin/bedtools2/bin/bedtools intersect -a {input.paftools} -b {input.assemblytics} -u -r -f 0.5 > {output.paf_bly}")
-        shell("~/bin/bedtools2/bin/bedtools intersect -a {input.asmvar} -b {input.assemblytics} -u -r -f 0.5 > {output.asm_bly}")
-        shell("cat {output.paf_asm} <(~/bin/bedtools2/bin/bedtools intersect -a {output.paf_bly} -b {output.paf_asm} -v -r -f 0.5) <(~/bin/bedtools2/bin/bedtools intersect -a {output.asm_bly} -b {output.paf_bly} {output.paf_asm} -v -r -f 0.5) > {output.final}")
+        shell("bedtools intersect -a {input.paftools} -b {input.asmvar} -u -r -f 0.5 > {output.paf_asm}")
+        shell("bedtools intersect -a {input.paftools} -b {input.assemblytics} -u -r -f 0.5 > {output.paf_bly}")
+        shell("bedtools intersect -a {input.asmvar} -b {input.assemblytics} -u -r -f 0.5 > {output.asm_bly}")
+        shell("cat {output.paf_asm} <(bedtools intersect -a {output.paf_bly} -b {output.paf_asm} -v -r -f 0.5) <(bedtools intersect -a {output.asm_bly} -b {output.paf_bly} {output.paf_asm} -v -r -f 0.5) > {output.final}")
 
 
 ###############
@@ -276,7 +276,7 @@ rule merge_strains_all:
         command = "cat {input.calls[0]}"
         already_added = "{input.calls[0]}"
         for index in range(1, len(input.calls)):
-            command += " <(~/bin/bedtools2/bin/bedtools intersect -a {{input.calls[{0}]}} -b {1} -v -r -f 0.9)".format(index, already_added)
+            command += " <(bedtools intersect -a {{input.calls[{0}]}} -b {1} -v -r -f 0.9)".format(index, already_added)
             already_added += " {{input.calls[{0}]}}".format(index)
         print(command)
         shell(command + " | sort -k1,1V -k2,2n -k3,3n -k6,6 -k7,7 -u > {output}")
@@ -290,7 +290,7 @@ rule merge_strains_twoout:
         command = "cat {input.calls[0]}"
         already_added = "{input.calls[0]}"
         for index in range(1, len(input.calls)):
-            command += " <(~/bin/bedtools2/bin/bedtools intersect -a {{input.calls[{0}]}} -b {1} -v -r -f 0.9)".format(index, already_added)
+            command += " <(bedtools intersect -a {{input.calls[{0}]}} -b {1} -v -r -f 0.9)".format(index, already_added)
             already_added += " {{input.calls[{0}]}}".format(index)
         print(command)
         shell(command + " | sort -k1,1V -k2,2n -k3,3n -k6,6 -k7,7 -u > {output}")
@@ -304,7 +304,7 @@ rule merge_strains_conly:
         command = "cat {input.calls[0]}"
         already_added = "{input.calls[0]}"
         for index in range(1, len(input.calls)):
-            command += " <(~/bin/bedtools2/bin/bedtools intersect -a {{input.calls[{0}]}} -b {1} -v -r -f 0.9)".format(index, already_added)
+            command += " <(bedtools intersect -a {{input.calls[{0}]}} -b {1} -v -r -f 0.9)".format(index, already_added)
             already_added += " {{input.calls[{0}]}}".format(index)
         print(command)
         shell(command + " | sort -k1,1V -k2,2n -k3,3n -k6,6 -k7,7 -u > {output}")
@@ -340,12 +340,4 @@ rule tabix:
         "{file}.vcf.gz.tbi"
     shell:
         "tabix -p vcf {input}"
-
-
-
-
-
-
-
-
 
