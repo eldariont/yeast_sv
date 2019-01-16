@@ -1,0 +1,222 @@
+STRAINS_C_ONLY=["DBVPG6765", "Y12", "YPS128", "UWOPS034614", "SK1", "DBVPG6044"]
+STRAINS_ALL=["UWOPS919171", "UFRJ50816", "YPS138", "N44", "CBS432", "UWOPS034614", "YPS128", "Y12", "SK1", "DBVPG6765", "DBVPG6044"]
+
+configfile: "samples.yaml"
+
+
+rule all:
+     input:
+        expand("results/twooutofthree/accuracy.constructunion.{set}.pdf", set=["all", "twoout", "conly"])
+
+
+##############
+# CONVERSION #
+##############
+
+rule tabix:
+    input:
+        "{file}.vcf.gz"
+    output:
+        "{file}.vcf.gz.tbi"
+    shell:
+        "tabix -p vcf {input}"
+
+
+rule fix_chromosomes:
+    input:
+        lambda wildcards: "calls/{0}_{1}/vcf/{2}.{3}.{0}.{1}.vcf.gz".format(wildcards.graph, wildcards.version, config["samples"][wildcards.strainname], wildcards.options)
+    output:
+        "calls/{graph}_{version}/vcf_processed/{strainname}.{options}.vcf.gz"
+    shell:
+        "gzcat {input} | sed 's/^S288C.//g' | bgzip -c > {output}"
+
+
+##############
+# EVALUATION #
+##############
+
+rule evaluate_svs_asmvar:
+    input:
+        calls="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz",
+        calls_index="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz.tbi",
+        gold="gold/asmvar/{strain}.filtered.vcf.gz",
+        gold_index="gold/asmvar/{strain}.filtered.vcf.gz.tbi",
+    output:
+        "{strain}/asmvar/{graph}.{version}.{options}/sv_accuracy.tsv",
+        "{strain}/asmvar/{graph}.{version}.{options}/sv_evaluation.tar.gz"
+    params:
+        outstore="./{strain}/asmvar/{graph}.{version}.{options}",
+        jobstore="./{strain}/asmvar/_jobstore.{graph}.{version}.{options}"
+    run:
+        shell("toil clean {params.jobstore}"),
+        shell("toil-vg vcfeval --container None --call_vcf {input.calls} --vcfeval_baseline {input.gold} --sveval --min_sv_len 20 --sv_overlap 0.5 --ins_max_gap 20 --del_min_rol 0.1 {params.jobstore} {params.outstore}")
+
+rule evaluate_svs_asmvar_missing_input:
+    input:
+    output:
+        "{strain}/asmvar/{graph}.{version}.{options}/sv_accuracy.tsv"
+    shell:
+        "touch {output}"
+
+
+ruleorder: evaluate_svs_asmvar > evaluate_svs_asmvar_missing_input
+
+rule evaluate_svs_assemblytics:
+    input:
+        calls="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz",
+        calls_index="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz.tbi",
+        gold="gold/assemblytics/{strain}.vcf.gz",
+        gold_index="gold/assemblytics/{strain}.vcf.gz.tbi",
+        bed="merged.all.indels.bed"
+    output:
+        "{strain}/assemblytics/{graph}.{version}.{options}/sv_accuracy.tsv",
+        "{strain}/assemblytics/{graph}.{version}.{options}/sv_evaluation.tar.gz"
+    params:
+        outstore="./{strain}/assemblytics/{graph}.{version}.{options}",
+        jobstore="./{strain}/assemblytics/_jobstore.{graph}.{version}.{options}"
+    run:
+        shell("toil clean {params.jobstore}"),
+        shell("toil-vg vcfeval --container None --call_vcf {input.calls} --vcfeval_baseline {input.gold} --vcfeval_bed_regions {input.bed} --sv_region_overlap 0.0000001 --sveval --min_sv_len 20 --sv_overlap 0.5 --ins_max_gap 20 --del_min_rol 0.1 {params.jobstore} {params.outstore}")
+
+rule evaluate_svs_assemblytics_missing_input:
+    input:
+    output:
+        "{strain}/assemblytics/{graph}.{version}.{options}/sv_accuracy.tsv"
+    shell:
+        "touch {output}"
+
+
+ruleorder: evaluate_svs_assemblytics > evaluate_svs_assemblytics_missing_input
+
+
+rule evaluate_svs_twooutofthree:
+    input:
+        calls="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz",
+        calls_index="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz.tbi",
+        gold="gold/twooutofthree/two_out_of_three.{strain}.vcf.gz",
+        gold_index="gold/twooutofthree/two_out_of_three.{strain}.vcf.gz.tbi"
+    output:
+        "{strain}/twooutofthree/{graph}.{version}.{options}/sv_accuracy.tsv",
+        "{strain}/twooutofthree/{graph}.{version}.{options}/sv_evaluation.tar.gz"
+    params:
+        outstore="./{strain}/twooutofthree/{graph}.{version}.{options}",
+        jobstore="./{strain}/twooutofthree/_jobstore.{graph}.{version}.{options}"
+    run:
+        shell("toil clean {params.jobstore}"),
+        shell("toil-vg vcfeval --container None --call_vcf {input.calls} --vcfeval_baseline {input.gold} --sveval --ins_seq_comp --min_sv_len 20 --sv_overlap 0.5 --ins_max_gap 20 --del_min_rol 0.1 {params.jobstore} {params.outstore}")
+
+rule evaluate_svs_twooutofthree_missing_input:
+    input:
+    output:
+        "{strain}/twooutofthree/{graph}.{version}.{options}/sv_accuracy.tsv"
+    shell:
+        "touch {output}"
+
+
+ruleorder: evaluate_svs_twooutofthree > evaluate_svs_twooutofthree_missing_input
+
+
+############
+# Plotting #
+############
+
+rule cat_results_conly:
+    input:
+        construct=expand("{strain}/{gold}/{constructgraph}.conly.norecall/sv_accuracy.tsv", strain=STRAINS_ALL, gold=["{gold}"], constructgraph=["{constructgraph}"]),
+        cactus=expand("{strain}/{gold}/cactus.conly.recall/sv_accuracy.tsv", strain=STRAINS_ALL, gold=["{gold}"])
+    output:
+        "results/{gold}/accuracy.{constructgraph}.conly.tsv"
+    run:
+        shell("rm -f {output}")
+        for file in input.construct:
+            strain = file.split("/")[1]
+            shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"construct\", \"{strain}\", $0 }} }}' {file} >> {output}")
+        for file in input.cactus:
+            strain = file.split("/")[1]
+            shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"cactus\", \"{strain}\", $0 }} }}' {file} >> {output}")
+
+
+rule cat_results_all:
+    input:
+        construct=expand("{strain}/{gold}/{constructgraph}.all.norecall/sv_accuracy.tsv", strain=STRAINS_ALL, gold=["{gold}"], constructgraph=["{constructgraph}"]),
+        cactus=expand("{strain}/{gold}/cactus.all.recall/sv_accuracy.tsv", strain=STRAINS_ALL, gold=["{gold}"])
+    output:
+        "results/{gold}/accuracy.{constructgraph}.all.tsv"
+    run:
+        shell("rm -f {output}")
+        for file in input.construct:
+            strain = file.split("/")[1]
+            shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"construct\", \"{strain}\", $0 }} }}' {file} >> {output}")
+        for file in input.cactus:
+            strain = file.split("/")[1]
+            shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"cactus\", \"{strain}\", $0 }} }}' {file} >> {output}")
+
+
+rule cat_results_twoout:
+    input:
+        construct=expand("{strain}/{gold}/{constructgraph}.twoout.norecall/sv_accuracy.tsv", strain=STRAINS_ALL, gold=["{gold}"], constructgraph=["{constructgraph}"]),
+        cactus=expand("{strain}/{gold}/cactus.twoout.recall/sv_accuracy.tsv", strain=STRAINS_ALL, gold=["{gold}"])
+    output:
+        "results/{gold}/accuracy.{constructgraph}.twoout.tsv"
+    run:
+        shell("rm -f {output}")
+        for file in input.construct:
+            strain = file.split("/")[1]
+            shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"construct\", \"{strain}\", $0 }} }}' {file} >> {output}")
+        for file in input.cactus:
+            strain = file.split("/")[1]
+            shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"cactus\", \"{strain}\", $0 }} }}' {file} >> {output}")
+
+
+rule plot_accuracy:
+    input:
+        "results/{gold}/accuracy.{constructgraph}.{version}.tsv"
+    output:
+        "results/{gold}/accuracy.{constructgraph}.{version}.pdf"
+    shell:
+        "Rscript scripts/plot_metrics.R {input} {output}"
+
+
+# rule unpack:
+#     input:
+#         "{strain}/{gold}/{graph}.{version}.{options}/sv_evaluation.tar.gz"
+#     output:
+#         "{strain}/{gold}/{graph}.{version}.{options}/sv_evaluation/DEL-TP-call.tsv",
+#         "{strain}/{gold}/{graph}.{version}.{options}/sv_evaluation/INS-TP-call.tsv"
+#     params:
+#         dir="{strain}/{gold}/{graph}.{version}.{options}/"
+#     shell:
+#         "tar -C {params.dir} -xzvf {input}"
+
+# rule compare_support:
+#     input:
+#         construct="{strain}/{gold}/construct.{version}.norecall/sv_evaluation/{type}-TP-call.tsv",
+#         cactus="{strain}/{gold}/cactus.{version}.recall/sv_evaluation/{type}-TP-call.tsv"
+#     output:
+#         {strain}/{gold}/{type}.tp.common.support.{version}.tsv"
+#     shell:
+#         "bedtools intersect -a <(awk 'OFS=\"\\t\" {{if(NR>1) {{print $0}}}}' {input.construct} | cut -f 2-) -b <(awk 'OFS=\"\\t\" {{if(NR>1) {{print $0}}}}' {input.cactus} | cut -f 2-) -wo | awk 'OFS=\"\\t\" {{ print \"{wildcards.strain}\", \"{wildcards.type}\", \"{wildcards.version}\", $0 }}' > {output}"
+
+# rule cat_support_conly:
+#     input:
+#         expand({strain}/{gold}/{type}.tp.common.support.conly.tsv", strain=STRAINS_C_ONLY, gold=["{gold}"], type=["DEL", "INS"])
+#     output:
+#         results/{gold}/support.conly.tsv"
+#     shell:
+#         "cat {input} > {output}"
+
+# rule cat_support_all:
+#     input:
+#         expand({strain}/{gold}/{type}.tp.common.support.all.tsv", strain=STRAINS_ALL, gold=["{gold}"], type=["DEL", "INS"])
+#     output:
+#         results/{gold}/support.all.tsv"
+#     shell:
+#         "cat {input} > {output}"
+
+# rule plot_support:
+#     input:
+#         results/{gold}/support.{version}.tsv"
+#     output:
+#         results/{gold}/support.{version}.pdf"
+#     shell:
+#         "Rscript evaluation/scripts/plot_support.R {input} {output}"

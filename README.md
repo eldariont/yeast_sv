@@ -39,7 +39,7 @@ There are 3 different subdirectories for Graph A in `yeast_sv/graphs`:
 - `yeast_sv/graphs/constructunion_twoout` - Integrate variants from only 9 of the strains into the graph (excluding Y12 and N44)
 - `yeast_sv/graphs/constructunion_conly` - Integrate variants from only S. cerevisiae strains into the graph
 
-For the first graph, run:
+Let's call them the three sample sets. For the first sample set (`all`), run:
 ```
 cd yeast_sv/graphs/constructunion_all
 snakemake
@@ -60,7 +60,7 @@ source cactus_env/bin/activate
 pip install --upgrade toil
 ```
 
-Like for Graph A, there are 3 different flavors of Graph B: `all`, `twoout` and `conly`. To create either of them, now follow the steps in `yeast_sv/cactus/all/aws_commands.sh`, `yeast_sv/cactus/twoout/aws_commands.sh` or `yeast_sv/cactus/conly/aws_commands.sh`.
+Like for Graph A, there are 3 different sample sets of Graph B: `all`, `twoout` and `conly`. To create either of them, now follow the steps in `yeast_sv/cactus/all/aws_commands.sh`, `yeast_sv/cactus/twoout/aws_commands.sh` or `yeast_sv/cactus/conly/aws_commands.sh`.
 
 
 ## Create, index and map Illumina reads to Graph B
@@ -70,7 +70,7 @@ cd yeast_sv/graphs/cactus_all
 snakemake
 ```
 
-This will create Graph B from the cactus alignments produced in the previous step. Do likewise for the `twoout` and `conly` graphs.
+This will create Graph B from the cactus alignments produced in the previous step. Do likewise for the `twoout` and `conly` sample sets.
 
 As a result `yeast_sv/graphs/cactus_*/mappings` will contain the sorted GAM alignments of the Illumina reads against the graph.
 
@@ -85,6 +85,27 @@ pip install toil[aws,mesos]==3.18.0
 pip install toil-vg
 ```
 
-For Graph A, follow the steps in `yeast_sv/vg_call/graphA_aws_commands.sh`. It contains commands for the `all` graph but can be easily modified for the `twoout` and `conly` graphs.
+For Graph A, follow the steps in `yeast_sv/vg_call/graphA_aws_commands.sh`. It contains commands for the `all` sample set but can be easily modified for `twoout` and `conly`.
 For Graph B, follow the steps in `yeast_sv/vg_call/graphB_aws_commands.sh`.
 
+The compressed vcf results are written into an outstore on S3 of the form `aws:us-west-2:vgcall-yeast-<graph>-<sample-set>-outstore`
+
+
+## Evaluate genotyping performance
+
+To evaluate the SV genotype calls made by `vg call` you need to download them from the S3 outstore to the respective local directory `yeast_sv/evaluation/calls/<graph>_<sample-set>/vcf`. This can be done via the S3 web interface.
+
+Then, the high-confidence callsets produced before need to be copied into the gold standard directory:
+```
+cp yeast_sv/assemblies/SV/intersections/two_out_of_three.*.vcf.gz yeast_sv/evaluation/gold/twooutofthree/
+cp yeast_sv/assemblies/SV/intersections/two_out_of_three.*.vcf.gz.tbi yeast_sv/evaluation/gold/twooutofthree/
+```
+
+Now, the evaluation pipeline can be started with:
+```
+source toilvenv/bin/activate
+cd yeast_sv/evaluation/
+snakemake
+```
+
+It will produce pdf plots showing recall, precision and F1 in `yeast_sv/evaluation/results/twooutofthree`.
