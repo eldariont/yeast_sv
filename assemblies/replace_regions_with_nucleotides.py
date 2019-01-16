@@ -52,8 +52,8 @@ def main(args):
     ins_seq_file_name = "temp/ins_seqs_{0}.fa".format(options.name)
 
     #bedtools getfasta fetches the sequences for the coordinates in the bed files
-    subprocess.run(["/public/home/daheller/bin/bedtools2/bin/bedtools", "getfasta", "-fi", options.reference, "-bed", del_coord_file.name, "-name", "-fo", del_seq_file_name])
-    subprocess.run(["/public/home/daheller/bin/bedtools2/bin/bedtools", "getfasta", "-fi", options.query, "-bed", ins_coord_file.name, "-name", "-fo", ins_seq_file_name])
+    subprocess.run(["bedtools", "getfasta", "-fi", options.reference, "-bed", del_coord_file.name, "-name", "-fo", del_seq_file_name])
+    subprocess.run(["bedtools", "getfasta", "-fi", options.query, "-bed", ins_coord_file.name, "-name", "-fo", ins_seq_file_name])
 
     del_seq_file = open(del_seq_file_name, "r")
     ins_seq_file = open(ins_seq_file_name, "r")
