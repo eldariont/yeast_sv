@@ -20,4 +20,4 @@ d %>%
   geom_abline(intercept=0) +
   theme_bw()
 
-ggsave(args[3], device = "pdf", width = 5, height=5)
+ggsave(args[3], device = "png", width = 5, height=5)

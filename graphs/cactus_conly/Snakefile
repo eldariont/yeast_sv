@@ -17,7 +17,7 @@ rule all:
     input:
         expand("mappings/{sample}.mapped.sorted.gam", sample=SAMPLES),
         "exploded/component0.xg",
-        "mappings/stats/constructunion.all.pdf"
+        "mappings/stats/constructunion.all.png"
 
 
 rule hal2vg:
@@ -148,7 +148,7 @@ rule plot_counts:
         cactus="mappings/stats/all.tsv",
         construct="../{constructgraph}_conly/mappings/stats/all.tsv"
     output:
-        "mappings/stats/{constructgraph}.all.pdf"
+        "mappings/stats/{constructgraph}.all.png"
     shell:
         "Rscript ../../scripts/plot_stats.R {input.construct} {input.cactus} {output}"
 

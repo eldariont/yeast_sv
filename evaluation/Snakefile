@@ -6,7 +6,7 @@ configfile: "samples.yaml"
 
 rule all:
      input:
-        expand("results/twooutofthree/accuracy.constructunion.{set}.pdf", set=["all", "twoout", "conly"])
+        expand("results/twooutofthree/accuracy.constructunion.{set}.png", set=["all", "twoout", "conly"])
 
 
 ##############
@@ -28,7 +28,7 @@ rule fix_chromosomes:
     output:
         "calls/{graph}_{version}/vcf_processed/{strainname}.{options}.vcf.gz"
     shell:
-        "gzcat {input} | sed 's/^S288C.//g' | bgzip -c > {output}"
+        "zcat {input} | sed 's/^S288C.//g' | bgzip -c > {output}"
 
 
 ##############
@@ -129,10 +129,10 @@ rule cat_results_conly:
     run:
         shell("rm -f {output}")
         for file in input.construct:
-            strain = file.split("/")[1]
+            strain = file.split("/")[0]
             shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"construct\", \"{strain}\", $0 }} }}' {file} >> {output}")
         for file in input.cactus:
-            strain = file.split("/")[1]
+            strain = file.split("/")[0]
             shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"cactus\", \"{strain}\", $0 }} }}' {file} >> {output}")
 
 
@@ -145,10 +145,10 @@ rule cat_results_all:
     run:
         shell("rm -f {output}")
         for file in input.construct:
-            strain = file.split("/")[1]
+            strain = file.split("/")[0]
             shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"construct\", \"{strain}\", $0 }} }}' {file} >> {output}")
         for file in input.cactus:
-            strain = file.split("/")[1]
+            strain = file.split("/")[0]
             shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"cactus\", \"{strain}\", $0 }} }}' {file} >> {output}")
 
 
@@ -161,10 +161,10 @@ rule cat_results_twoout:
     run:
         shell("rm -f {output}")
         for file in input.construct:
-            strain = file.split("/")[1]
+            strain = file.split("/")[0]
             shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"construct\", \"{strain}\", $0 }} }}' {file} >> {output}")
         for file in input.cactus:
-            strain = file.split("/")[1]
+            strain = file.split("/")[0]
             shell("awk 'OFS=\"\\t\" {{ if( NR>1 ) {{ print \"cactus\", \"{strain}\", $0 }} }}' {file} >> {output}")
 
 
@@ -172,7 +172,7 @@ rule plot_accuracy:
     input:
         "results/{gold}/accuracy.{constructgraph}.{version}.tsv"
     output:
-        "results/{gold}/accuracy.{constructgraph}.{version}.pdf"
+        "results/{gold}/accuracy.{constructgraph}.{version}.png"
     shell:
         "Rscript scripts/plot_metrics.R {input} {output}"
 

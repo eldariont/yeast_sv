@@ -8,10 +8,10 @@ data_recall <- data %>% select(-tp, -tpb, -fp, -fn, -precision, -f1) %>% spread(
 data_f1 <- data %>% select(-tp, -tpb, -fp, -fn, -precision, -recall) %>% spread(key = graph, value = f1, drop=FALSE) %>% mutate(metric="f1")
 data_all <- rbind(data_precision, data_recall, data_f1)
 
-samples <- read_tsv("/Users/eldarion/Documents/Projects/ucsc/toilvg/strains.tsv", col_names = c("strain", "clade"))
+samples <- read_tsv("strains.tsv", col_names = c("strain", "clade"))
 
 
-ggplot(data_all %>% inner_join(samples), aes(x=construct, cactus, color=strain, pch=clade)) +
+ggplot(data_all %>% inner_join(samples) %>% filter(class %in% c("Total", "INS", "DEL")), aes(x=construct, cactus, color=strain, pch=clade)) +
   geom_point() +
   coord_cartesian(xlim=c(0,1), ylim=c(0,1)) +
   geom_abline(intercept=0) +
@@ -20,4 +20,4 @@ ggplot(data_all %>% inner_join(samples), aes(x=construct, cactus, color=strain, 
   #geom_vline(aes(xintercept=construct, color=strain)) +
   #geom_hline(aes(yintercept=cactus, color=strain))
 
-ggsave(args[2], device = "pdf", width = 6, height=6)
+ggsave(args[2], device = "png", width = 6, height=6)
