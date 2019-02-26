@@ -71,7 +71,7 @@ rule run_last:
     output:
         "lastal_output/{sample}.maf.gz"
     shell:
-        "lastal -e25 -v -q3 -j4 lastdb/S288C {input.assembly} | /public/home/daheller/bin/last-959/src/last-split -s35 -v | gzip > {output}"
+        "lastal -e25 -v -q3 -j4 lastdb/S288C {input.assembly} | last-split -s35 -v | gzip > {output}"
 
 
 #minimap2
