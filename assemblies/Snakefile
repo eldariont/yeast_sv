@@ -16,13 +16,14 @@
 SAMPLES_ALL=["UWOPS919171", "UFRJ50816", "YPS138", "N44", "CBS432", "UWOPS034614", "YPS128", "Y12", "SK1", "DBVPG6765", "DBVPG6044", "S288C"]
 SAMPLES_ALL_BUT_S288C=["UWOPS919171", "UFRJ50816", "YPS138", "N44", "CBS432", "UWOPS034614", "YPS128", "Y12", "SK1", "DBVPG6765", "DBVPG6044"]
 SAMPLES_ALL_BUT_S288C_N44_Y12=["UWOPS919171", "UFRJ50816", "YPS138", "CBS432", "UWOPS034614", "YPS128", "SK1", "DBVPG6765", "DBVPG6044"]
+SAMPLES_FOUR=["UFRJ50816", "YPS128", "CBS432", "SK1"]
 SAMPLES_C=["UWOPS034614", "YPS128", "Y12", "SK1", "DBVPG6765", "DBVPG6044"]
 
 rule all:
     input:
         expand("SV/unions/union.{sample}.vcf", sample=SAMPLES_ALL_BUT_S288C),
         expand("SV/intersections/two_out_of_three.{sample}.vcf.gz.tbi", sample=SAMPLES_ALL_BUT_S288C),
-        expand("SV/unions/merged/union.{subset}.vcf", subset=["all", "twoout", "conly"])
+        expand("SV/unions/merged/union.{subset}.vcf", subset=["all", "twoout", "conly", "four"])
         # expand("assemblies_repeatmasked/{sample}.genome.fa.masked", sample=SAMPLES_ALL)
 
 
@@ -309,6 +310,19 @@ rule merge_strains_conly:
         print(command)
         shell(command + " | sort -k1,1V -k2,2n -k3,3n -k6,6 -k7,7 -u > {output}")
 
+rule merge_strains_four:
+    input:
+        calls=expand("SV/{subdir}/{prefix}.{sample}.{type}.bed", sample=SAMPLES_FOUR, type=["{type}"], subdir=["{subdir}"], prefix=["{prefix}"])
+    output:
+        "SV/{subdir}/merged/{prefix}.four.{type}.bed"
+    run:
+        command = "cat {input.calls[0]}"
+        already_added = "{input.calls[0]}"
+        for index in range(1, len(input.calls)):
+            command += " <(bedtools intersect -a {{input.calls[{0}]}} -b {1} -v -r -f 0.9)".format(index, already_added)
+            already_added += " {{input.calls[{0}]}}".format(index)
+        print(command)
+        shell(command + " | sort -k1,1V -k2,2n -k3,3n -k6,6 -k7,7 -u > {output}")
 
 ############
 #CONVERSION#
