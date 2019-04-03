@@ -1,0 +1,33 @@
+#Assemblies
+assemblies/asmvar_output/
+assemblies/assemblies_repeatmasked/
+assemblies/assemblies_repeatmasked_hard/
+assemblies/assemblytics_output/
+assemblies/lastal_output/
+assemblies/lastdb/
+assemblies/minimap2_output/
+assemblies/nucmer_output/
+assemblies/paftools_output/
+assemblies/temp/
+
+
+
+illumina_reads/
+
+#SV calls
+evaluation/calls/*/vcf/
+evaluation/calls/*/vcf_processed/
+
+#Evaluation results
+evaluation/CBS432/
+evaluation/DBVPG6044/
+evaluation/DBVPG6765/
+evaluation/N44/
+evaluation/SK1/
+evaluation/UFRJ50816/
+evaluation/UWOPS034614/
+evaluation/UWOPS919171/
+evaluation/Y12/
+evaluation/YPS128/
+evaluation/YPS138/
+
