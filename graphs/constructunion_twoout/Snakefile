@@ -74,7 +74,16 @@ rule count_mapped_reads:
     output:
         "mappings/stats/{sample}.tsv"
     run:
-        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2!=0' | wc -l > {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>0' | wc -l > {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=10' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=20' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=30' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=40' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=50' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .mapping_quality == null then 0 else .mapping_quality end ] | @tsv' | awk '$2>=60' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' | awk '$2>=1' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' | awk '$2>=0.9' | wc -l >> {output}")
+        shell("vg view -a {input} | jq -rc '[.name, if .identity == null then 0 else .identity end ] | @tsv' | awk '$2>=0.5' | wc -l >> {output}")
         shell("vg view -a {input} | wc -l >> {output}")
 
 

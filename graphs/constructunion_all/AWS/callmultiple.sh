@@ -6,7 +6,7 @@ do
     echo "$i"
     MASTER_IP=`ifconfig eth0 |grep "inet addr" |awk '{print $2}' |awk -F: '{print $2}'`
     toil clean aws:us-west-2:vgcall-yeast-constructunion-all-jobstore
-    toil-vg call --vg_docker quay.io/vgteam/vg:v1.11.0-74-gdab42acd-t242-run --nodeTypes c5.2xlarge:0.2,r4.large --minNodes 0,0 --maxNodes 1,1 --provisioner aws --batchSystem mesos --mesosMaster=${MASTER_IP}:5050 --metrics aws:us-west-2:vgcall-yeast-constructunion-all-jobstore construct.xg $i.norecall.constructunion.all aws:us-west-2:vgcall-yeast-constructunion-all-outstore --gams $i.mapped.sorted.gam --chroms chrI chrII chrIII chrIV chrV chrVI chrVII chrVIII chrIX chrX chrXI chrXII chrXIII chrXIV chrXV chrXVI 2> $i.norecall.constructunion.all.log
+    toil-vg call --realTimeLogging --realTimeStderr --whole_genome_config --nodeTypes r3.8xlarge:0.53 --maxNodes 20 --defaultPreemptable --provisioner aws --batchSystem mesos --mesosMaster=${MASTER_IP}:5050 --metrics aws:us-west-2:vgcall-yeast-constructunion-all-jobstore construct.xg $i.norecall.constructunion.all aws:us-west-2:vgcall-yeast-constructunion-all-outstore --gams $i.mapped.sorted.gam --call_chunk_size 0 --chroms chrI chrII chrIII chrIV chrV chrVI chrVII chrVIII chrIX chrX chrXI chrXII chrXIII chrXIV chrXV chrXVI 2> $i.norecall.constructunion.all.log
 done
 
 

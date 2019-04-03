@@ -6,7 +6,7 @@ configfile: "samples.yaml"
 
 rule all:
      input:
-        expand("results/assemblyeval/constructunion.{set}.{aligned}.{metric}.png", set=["all", "twoout", "conly"], aligned=["contigs", "reads"], metric=["identity", "score", "mapq"])
+        expand("results/assemblyeval/constructunion.{set}.{aligned}.{metric}.png", set=["all", "four"], aligned=["contigs", "reads"], metric=["identity", "score", "mapq"])
 
 ##############
 # CONVERSION #
@@ -37,6 +37,7 @@ rule fix_chromosomes:
 rule create_sample_graph_from_calls1:
     input:
         calls="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz",
+        index="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz.tbi",
         reference="../assemblies/assemblies_raw/S288C.genome.fa"
     output:
         "{strain}/assemblyeval/{graph}.{version}.{options}/graph.reconstructed.vg"
@@ -49,6 +50,7 @@ rule create_sample_graph_from_calls1:
 rule create_sample_graph_from_calls2:
     input:
         calls="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz",
+        index="calls/{graph}_{version}/vcf_processed/{strain}.{options}.vcf.gz.tbi",
         graph="{strain}/assemblyeval/{graph}.{version}.{options}/graph.reconstructed.vg"
     output:
         "{strain}/assemblyeval/{graph}.{version}.{options}/graph.sample.vg"

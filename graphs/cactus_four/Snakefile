@@ -17,9 +17,8 @@ rule all:
     input:
         expand("mappings/{sample}.mapped.sorted.gam", sample=SAMPLES),
         "exploded/component0.xg",
-        "mappings/stats/all.tsv"
-        #"mappings/stats/constructunion_four.mapq.png"
-        #"mappings/stats/constructunion_four.identity.png"
+        "mappings/stats/constructunion_four.mapq.png",
+        "mappings/stats/constructunion_four.identity.png"
 
 
 rule hal2vg:
@@ -161,7 +160,7 @@ rule plot_mapping_quality:
     output:
         "mappings/stats/{constructgraph}_four.mapq.png"
     shell:
-        "Rscript ../../scripts/plot_mapping_quality.R {input.construct} {input.cactus} {output}"
+        "Rscript scripts/plot_mapping_quality.R {input.construct} {input.cactus} {output}"
 
 
 rule plot_identity:
@@ -171,7 +170,7 @@ rule plot_identity:
     output:
         "mappings/stats/{constructgraph}_four.identity.png"
     shell:
-        "Rscript ../../scripts/plot_identity.R {input.construct} {input.cactus} {output}"
+        "Rscript scripts/plot_identity.R {input.construct} {input.cactus} {output}"
 
 
 rule sort_gam:
